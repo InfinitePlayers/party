@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>The Enola Detective Agency</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&family=Pinyon+Script&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-pattern: #2c241b;
+            --paper: #fdf6e3;
+            --ink: #2b2b2b;
+            --accent: #6a1b9a; /* Default Purple */
+            --gold: #c5a059;
+            --error: #8b0000;
+            --font-display: 'Cinzel', serif;
+            --font-body: 'Cormorant Garamond', serif;
+            --font-hand: 'Pinyon Script', cursive;
+        }
+
+        /* TEAM SPECIFIC THEMES */
+        body.theme-rose { --accent: #d32f2f; --bg-pattern: #3e2723; } /* Red/Brown */
+        /* Team Sunflower (Yellow) */
+        body.theme-sunflower { --accent: #9e7d00; --bg-pattern: #fff8e1; } 
+
+        body {
+            background-color: var(--bg-pattern);
+            background-image: radial-gradient(var(--gold) 1px, transparent 1px);
+            background-size: 30px 30px;
+            color: var(--ink);
+            font-family: var(--font-body);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+            padding: 10px;
+            box-sizing: border-box;
+            transition: background-color 0.5s;
+        }
+
+        /* --- UI CONTAINER --- */
+        #game-container {
+            background: var(--paper);
+            width: 100%;
+            max-width: 600px;
+            padding: 20px;
+            box-sizing: border-box;
+            position: relative;
+            box-shadow: 0 0 0 8px var(--paper), 0 0 0 10px var(--gold), 0 10px 30px rgba(0,0,0,0.7);
+            min-height: 85vh;
+            display: flex;
+            flex-direction: column;
+            border-radius: 4px;
+        }
+
+        /* Paper Texture */
+        #game-container::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1MDAiIGhlaWdodD0iNTAwIj48ZmlsdGVyIGlkPSJub2lzZSI+PGZlVHVyYnVsZW5jZSB0eXBlPSJmcmFjdGFsTm9pc2UiIGJhc2VGcmVxdWVuY3k9IjAuNjUiIG51bU9jdGF2ZXM9IjMiIHN0aXRjaFRpbGVzPSJzdGl0Y2giLz48L2ZpbHRlcj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWx0ZXI9InVybCgjbm9pc2UpIiBvcGFjaXR5PSIwLjEiLz48L3N2Zz4=');
+            opacity: 0.6;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .content {
+            position: relative;
+            z-index: 2;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* --- TYPOGRAPHY --- */
+        h1 {
+            font-family: var(--font-display);
+            text-align: center;
+            color: var(--ink);
+            font-size: 1.8rem;
+            margin: 10px 0 20px 0;
+            border-bottom: 2px solid var(--gold);
+            padding-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        h2 {
+            font-family: var(--font-display);
+            font-size: 1.2rem;
+            text-align: center;
+            color: var(--accent);
+            margin: 0;
+        }
+
+        p {
+            font-size: 1.2rem;
+            line-height: 1.4;
+            text-align: center;
+            margin: 10px 0;
+        }
+
+        .handwritten {
+            font-family: var(--font-hand);
+            font-size: 2rem;
+            color: var(--accent);
+            display: block;
+            margin: 5px 0;
+        }
+
+        /* --- TEAM SELECTION BUTTONS --- */
+        .team-select-btn {
+            padding: 20px;
+            margin: 10px 0;
+            font-size: 1.5rem;
+            border: 2px solid var(--gold);
+            cursor: pointer;
+            transition: transform 0.2s;
+            width: 100%;
+            display: block;
+        }
+        .btn-rose { background: #ffebee; color: #b71c1c; border-color: #b71c1c; }
+        .btn-sunflower { background: #fffde7; color: #9e7d00; border-color: #fbc02d; }
+        .team-select-btn:hover { transform: scale(1.02); }
+
+        /* --- HUD --- */
+        #hud {
+            display: flex;
+            justify-content: space-between;
+            font-family: var(--font-display);
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+            color: var(--ink);
+        }
+
+        /* --- CLUE BOX --- */
+        .clue-box {
+            background: rgba(255,255,255,0.5);
+            padding: 15px;
+            border-left: 4px solid var(--accent);
+            margin: 15px 0;
+            font-style: italic;
+            position: relative;
+            text-align: center;
+        }
+
+        /* --- INPUTS & BUTTONS --- */
+        input[type="text"] {
+            width: 100%; padding: 12px; font-size: 1.1rem; margin-top: 10px;
+            border: 2px solid var(--gold); background: #fff; box-sizing: border-box;
+            font-family: var(--font-display); text-align: center; text-transform: uppercase;
+        }
+
+        button {
+            background: var(--ink); color: var(--gold); border: 2px solid var(--ink);
+            padding: 12px; font-size: 1rem; font-family: var(--font-display);
+            cursor: pointer; width: 100%; margin-top: 20px; text-transform: uppercase;
+        }
+        button:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+        .hint-btn {
+            background: transparent; color: var(--accent); border: 1px dashed var(--accent);
+            font-size: 0.9rem; margin-top: 10px; padding: 10px; width: 100%; cursor: pointer;
+        }
+
+        /* --- GAME ELEMENTS --- */
+        .cipher-container {
+            position: relative; width: 200px; height: 200px; margin: 10px auto;
+            border-radius: 50%; border: 4px solid var(--ink); background: #fff;
+        }
+        .cipher-outer, .cipher-inner {
+            position: absolute; width: 100%; height: 100%; border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+        }
+        .cipher-inner {
+            width: 70%; height: 70%; top: 15%; left: 15%; background: var(--paper); border: 2px dashed var(--accent);
+        }
+        .cipher-letter { position: absolute; font-family: monospace; font-weight: bold; font-size: 10px; top: 5px; left: 50%; transform-origin: center 90px; }
+        .inner-letter { position: absolute; font-family: monospace; font-weight: bold; font-size: 10px; top: 5px; left: 50%; transform-origin: center 60px; color: var(--accent); }
+        
+        .tile {
+            width: 93.33px; height: 93.33px; position: absolute;
+            background-size: 280px 280px; border: 1px solid rgba(255,255,255,0.3);
+            filter: sepia(0.5); transition: all 0.2s;
+        }
+        .tile.empty { background: none; border: none; pointer-events: none; }
+        #puzzle-board { width: 280px; height: 280px; margin: 10px auto; position: relative; border: 8px solid var(--ink); background: #222; }
+
+        .memory-item { font-size: 3rem; text-align: center; border: 2px solid var(--gold); border-radius: 8px; padding: 10px; }
+        #memory-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 20px auto; width: 100%; max-width: 300px; }
+
+        /* --- FINAL BOUQUET (4 Slots) --- */
+        .bouquet-slots { display: flex; justify-content: center; gap: 8px; margin-bottom: 20px; }
+        .slot {
+            width: 50px; height: 50px; border: 2px dashed var(--gold); border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; font-size: 1.5rem; background: rgba(255,255,255,0.5);
+        }
+        .flower-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+        .flower-btn {
+            background: white; border: 1px solid var(--gold); border-radius: 4px; padding: 12px 4px;
+            text-align: center; cursor: pointer;
+        }
+        .flower-btn span { display: block; font-size: 1.5rem; }
+        .flower-btn small { font-size: 0.8rem; font-family: var(--font-display); line-height: 1.2; font-weight: bold; }
+
+        .stage { display: none; animation: fadeEffect 0.6s; }
+        .stage.active { display: block; }
+        @keyframes fadeEffect { from {opacity: 0;} to {opacity: 1;} }
+        
+        .error { color: var(--error); font-weight: bold; text-align: center; margin-top: 5px; font-size: 0.9rem; }
+        #backdoor-btn { position: fixed; bottom: 5px; right: 5px; font-size: 1.5rem; opacity: 0.1; cursor: pointer; z-index: 999; }
+
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        
+        <!-- HUD -->
+        <div id="hud">
+            <span id="team-display">ENOLA DETECTIVES</span>
+            <span>TIME: <span id="timer">45:00</span></span>
+        </div>
+
+        <div class="content">
+
+            <!-- STAGE: TEAM SELECTION -->
+            <div id="stage-setup" class="stage active">
+                <h1>Detective Agency</h1>
+                <p>Welcome. To find the missing gift, we must split up to cover more ground.</p>
+                <p><strong>Choose your squad:</strong></p>
+                
+                <button class="team-select-btn btn-rose" onclick="selectTeam('rose')">
+                    🌹 TEAM ROSE<br><span style="font-size:1rem; color:#555">The Searchers</span>
+                </button>
+                
+                <button class="team-select-btn btn-sunflower" onclick="selectTeam('sunflower')">
+                    🌻 TEAM SUNFLOWER<br><span style="font-size:1rem; color:#555">The Decoders</span>
+                </button>
+            </div>
+
+            <!-- STAGE 0: INTRO -->
+            <div id="stage-intro" class="stage">
+                <h2 id="intro-title">Team Rose Investigation</h2>
+                <p>Dearest Detectives,</p>
+                <p>I have left a clue specifically for your team.</p>
+                <div class="clue-box">
+                    Go to the <span class="handwritten" id="intro-location">...</span>.
+                </div>
+                <p>Find the <strong>Red Letter</strong> and enter the code found on the back.</p>
+                <input type="text" id="input-intro" placeholder="Secret Code">
+                <div id="error-intro" class="error"></div>
+                <button onclick="attemptUnlock('intro')">Begin</button>
+            </div>
+
+            <!-- STAGE 1: CIPHER WHEEL -->
+            <div id="stage-1" class="stage">
+                <h2>Chapter I: The Cipher</h2>
+                <p>The note is encrypted. Use the age the Birthday Girl is <strong>turning</strong> as the Key!</p>
+                <p style="font-size:0.9rem">SHIFT: <span id="shift-display">0</span></p>
+                
+                <div class="cipher-container">
+                    <div class="cipher-outer" id="cipher-outer"></div>
+                    <div class="cipher-inner" id="cipher-inner"></div>
+                </div>
+                <input type="range" id="cipher-control" min="-15" max="15" value="0" step="1" oninput="rotateCipher(this.value)" style="width:80%; margin:10px auto; display:block;">
+                
+                <div class="clue-box" style="font-family:monospace; letter-spacing:3px; font-weight:bold;">
+                    <span id="cipher-text">...</span>
+                </div>
+                
+                <input type="text" id="input-1" placeholder="Decoded Message">
+                <div id="error-1" class="error"></div>
+                <button onclick="attemptUnlock('1')">Solve</button>
+            </div>
+
+            <!-- TRANSITION 1 -->
+            <div id="stage-t1" class="stage">
+                <h1>Well Done!</h1>
+                <p>Your team is making progress.</p>
+                <div class="clue-box">
+                    The next clue is hidden at:<br>
+                    <span class="handwritten" id="txt-location-1">...</span>
+                </div>
+                <input type="text" id="input-t1" placeholder="Secret Code Found There">
+                <div id="error-t1" class="error"></div>
+                <button onclick="attemptUnlock('t1')">Proceed</button>
+            </div>
+
+            <!-- STAGE 2: SLIDE PUZZLE -->
+            <div id="stage-2" class="stage">
+                <h2>Chapter II: The Map</h2>
+                <p>Restore the map to find your next destination.</p>
+                <div id="puzzle-board"></div>
+                <div id="error-2" class="error" style="color:var(--accent)"></div>
+            </div>
+
+            <!-- TRANSITION 2 -->
+            <div id="stage-t2" class="stage">
+                <h1>Map Restored</h1>
+                <p>You are almost there.</p>
+                <div class="clue-box">
+                    The final team clue is at:<br>
+                    <span class="handwritten" id="txt-location-2">...</span>
+                </div>
+                <input type="text" id="input-t2" placeholder="Secret Code Found There">
+                <div id="error-t2" class="error"></div>
+                <button onclick="attemptUnlock('t2')">Next Challenge</button>
+            </div>
+
+            <!-- STAGE 3: MEMORY GAME -->
+            <div id="stage-memory" class="stage">
+                <h2>Chapter III: The Vanishing</h2>
+                <p id="mem-instruction">Memorize these items!</p>
+                <div id="memory-grid"></div>
+                <div id="mem-options" style="display:none; margin-top:20px;">
+                    <p>Which item was stolen?</p>
+                    <div id="mem-buttons" class="flower-grid"></div>
+                </div>
+                <div id="error-mem" class="error"></div>
+            </div>
+
+            <!-- TRANSITION 3 -->
+            <div id="stage-t3" class="stage">
+                <h1>Joint Investigation</h1>
+                <p>You have gathered your half of the evidence.</p>
+                <div class="clue-box">
+                    <span id="final-clue-text">...</span>
+                </div>
+                <p>Find the other team! You must combine your clues to solve the final lock.</p>
+                <button onclick="showStage('flowers')">Enter Final Code</button>
+            </div>
+
+            <!-- STAGE 4: COLLABORATIVE BOUQUET -->
+            <div id="stage-flowers" class="stage">
+                <h2>The Final Lock</h2>
+                <p>Enola requires a bouquet of 4 flowers.</p>
+                <p style="font-size:0.9rem; font-style:italic;">
+                    Team Rose knows the 1st & 2nd flowers.<br>
+                    Team Sunflower knows the 3rd & 4th flowers.<br>
+                    <strong>Work together!</strong>
+                </p>
+
+                <div class="bouquet-slots">
+                    <div class="slot" id="slot-0">1</div>
+                    <div class="slot" id="slot-1">2</div>
+                    <div class="slot" id="slot-2">3</div>
+                    <div class="slot" id="slot-3">4</div>
+                </div>
+
+                <div class="flower-grid">
+                    <div class="flower-btn" onclick="pickFlower('rose', '🌹')"><span>🌹</span><small>Rose</small></div>
+                    <div class="flower-btn" onclick="pickFlower('lily', '⚜️')"><span>⚜️</span><small>Lily</small></div>
+                    <div class="flower-btn" onclick="pickFlower('ivy', '🌿')"><span>🌿</span><small>Ivy</small></div>
+                    <div class="flower-btn" onclick="pickFlower('sunflower', '🌻')"><span>🌻</span><small>Sunflower</small></div>
+                    <div class="flower-btn" onclick="pickFlower('tulip', '🌷')"><span>🌷</span><small>Tulip</small></div>
+                    <div class="flower-btn" onclick="pickFlower('daisy', '🌼')"><span>🌼</span><small>Daisy</small></div>
+                </div>
+
+                <div id="error-flowers" class="error"></div>
+                <button onclick="resetBouquet()" style="margin-top:10px; background:#ccc; border:none; padding:8px; font-size:0.8rem; color:#333;">Clear Selection</button>
+            </div>
+
+            <!-- STAGE WIN -->
+            <div id="stage-win" class="stage">
+                <h1>CASE CLOSED!</h1>
+                <div class="clue-box" style="background: white; border: 4px double var(--gold);">
+                    <p>The teams have united.</p>
+                    <p>The treasure is hidden:</p>
+                    <p class="handwritten" style="font-size:2.5rem;">UNDER THE PILLOW</p>
+                </div>
+                <p style="margin-top:30px;">Happy Birthday!</p>
+            </div>
+
+        </div>
+    </div>
+
+    <div id="backdoor-btn" onclick="triggerBackdoor()">🗝️</div>
+
+    <script>
+        /* ========================================
+           🕵️‍♀️ GAME CONFIGURATION
+        ======================================== */
+        
+        // --- TEAM ROSE PATH (Red/Pink) ---
+        const configRose = {
+            introLocation: "Fridge (Cold Milk)",
+            introCode: "SISTER",
+            
+            // Cipher: SISTER
+            cipherDisplay: "BRBCNA", 
+            cipherAnswer: "SISTER",
+
+            loc1_text: "Where you Brush your Teeth",
+            code1: "BRUSH",
+
+            loc2_text: "Under the Dining Table",
+            code2: "DINNER",
+
+            finalClue: "Your part of the sequence is: \n 1. ROSE \n 2. LILY"
+        };
+
+        // --- TEAM SUNFLOWER PATH (Yellow) ---
+        const configSunflower = {
+            introLocation: "Sofa (Living Room)",
+            introCode: "MOTHER",
+            
+            // Cipher: MOTHER
+            cipherDisplay: "VXCQNA",
+            cipherAnswer: "MOTHER",
+
+            loc1_text: "Where you keep your Shoes",
+            code1: "LACES",
+
+            loc2_text: "Behind the Curtains",
+            code2: "WINDOW",
+
+            finalClue: "Your part of the sequence is: \n 3. IVY \n 4. SUNFLOWER"
+        };
+
+        // --- FINAL JOINT ANSWER ---
+        // Rose, Lily, Ivy, Sunflower
+        const finalSequence = ['rose', 'lily', 'ivy', 'sunflower'];
+
+        // ========================================
+
+        let currentTeam = null; 
+        let currentConfig = null;
+        let currentStageId = 'setup';
+        let bouquet = [];
+        let timeRemaining = 45 * 60;
+        let timerInterval;
+
+        // --- SETUP ---
+        function selectTeam(team) {
+            currentTeam = team;
+            currentConfig = (team === 'rose') ? configRose : configSunflower;
+            
+            // Apply Theme
+            document.body.className = `theme-${team}`;
+            document.getElementById('team-display').innerText = `TEAM ${team.toUpperCase()}`;
+            document.getElementById('intro-title').innerText = `Team ${team.charAt(0).toUpperCase() + team.slice(1)} Investigation`;
+            
+            // Setup Text
+            document.getElementById('intro-location').innerText = currentConfig.introLocation;
+            document.getElementById('cipher-text').innerText = currentConfig.cipherDisplay;
+            document.getElementById('txt-location-1').innerText = currentConfig.loc1_text;
+            document.getElementById('txt-location-2').innerText = currentConfig.loc2_text;
+            document.getElementById('final-clue-text').innerText = currentConfig.finalClue;
+
+            // Start Timer
+            if (!timerInterval) {
+                timerInterval = setInterval(() => {
+                    timeRemaining--;
+                    let m = Math.floor(timeRemaining/60);
+                    let s = timeRemaining%60;
+                    document.getElementById('timer').innerText = `${m}:${s<10?'0'+s:s}`;
+                }, 1000);
+            }
+
+            showStage('intro');
+        }
+
+        function showStage(id) {
+            document.querySelectorAll('.stage').forEach(el => el.classList.remove('active'));
+            document.getElementById('stage-' + id).classList.add('active');
+            currentStageId = id;
+
+            if (id === '1') initCipherWheel();
+            if (id === '2') setTimeout(initSlidePuzzle, 100);
+            if (id === 'memory') setTimeout(initMemoryGame, 500);
+        }
+
+        function attemptUnlock(stage) {
+            const err = document.getElementById('error-' + stage);
+            err.innerText = "";
+            let val = document.getElementById('input-' + stage).value.trim().toUpperCase();
+
+            if (stage === 'intro') {
+                if (val === currentConfig.introCode) showStage('1');
+                else err.innerText = "Incorrect Code.";
+            } 
+            else if (stage === '1') {
+                if (val === currentConfig.cipherAnswer) showStage('t1');
+                else err.innerText = "Incorrect Decryption.";
+            }
+            else if (stage === 't1') {
+                if (val === currentConfig.code1) showStage('2');
+                else err.innerText = "Incorrect Code.";
+            }
+            else if (stage === 't2') {
+                if (val === currentConfig.code2) showStage('memory');
+                else err.innerText = "Incorrect Code.";
+            }
+        }
+
+        // --- CIPHER ---
+        function initCipherWheel() {
+            const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split('');
+            const outer = document.getElementById('cipher-outer');
+            const inner = document.getElementById('cipher-inner');
+            outer.innerHTML = ''; inner.innerHTML = '';
+            letters.forEach((l, i) => {
+                let s1 = document.createElement('span'); s1.className='cipher-letter'; s1.innerText=l; s1.style.transform=`rotate(${i*(360/26)}deg)`; outer.appendChild(s1);
+                let s2 = document.createElement('span'); s2.className='inner-letter'; s2.innerText=l; s2.style.transform=`rotate(${i*(360/26)}deg)`; inner.appendChild(s2);
+            });
+        }
+        function rotateCipher(val) { 
+            document.getElementById('shift-display').innerText = val > 0 ? "+" + val : val;
+            document.getElementById('cipher-inner').style.transform = `rotate(${val * (360/26)}deg)`; 
+        }
+
+        // --- SLIDE PUZZLE ---
+        let tiles = [];
+        function initSlidePuzzle() {
+            const board = document.getElementById('puzzle-board');
+            board.innerHTML = '';
+            tiles = [];
+            for(let i=0; i<9; i++) {
+                let t = document.createElement('div'); t.className = 'tile';
+                if(i===8) t.classList.add('empty');
+                else {
+                    let r = Math.floor(i/3), c = i%3;
+                    t.style.backgroundPosition = `-${c*93.33}px -${r*93.33}px`;
+                    t.style.backgroundImage = 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'280\' height=\'280\' viewBox=\'0 0 280 280\'%3E%3Crect width=\'280\' height=\'280\' fill=\'%23fdf6e3\'/%3E%3Cpath d=\'M40,40 Q100,10 140,40 T240,40\' stroke=\'%238b0000\' stroke-width=\'3\' fill=\'none\' stroke-dasharray=\'5,5\'/%3E%3Ccircle cx=\'40\' cy=\'40\' r=\'5\' fill=\'%238b0000\'/%3E%3Crect x=\'220\' y=\'30\' width=\'20\' height=\'20\' fill=\'%238b0000\'/%3E%3Ctext x=\'140\' y=\'140\' font-family=\'Courier\' font-size=\'20\' text-anchor=\'middle\' fill=\'%235d4037\' opacity=\'0.3\'%3EMAP FRAGMENT%3C/text%3E%3Cpath d=\'M50,200 L100,150 L150,200\' stroke=\'%235d4037\' stroke-width=\'2\' fill=\'none\'/%3E%3Ccircle cx=\'200\' cy=\'200\' r=\'30\' stroke=\'%235d4037\' stroke-width=\'2\' fill=\'none\'/%3E%3Cpath d=\'M200,170 L200,230 M170,200 L230,200\' stroke=\'%235d4037\' stroke-width=\'1\'/%3E%3C/svg%3E")';
+                    t.onclick = () => moveTile(i);
+                }
+                t.dataset.curr = i; tiles.push(t); board.appendChild(t);
+            }
+            renderTiles(); scramble(100);
+        }
+        function renderTiles() {
+            tiles.forEach(t => {
+                let curr = parseInt(t.dataset.curr);
+                let r = Math.floor(curr/3), c = curr%3;
+                t.style.top = (r*93.33)+'px'; t.style.left = (c*93.33)+'px';
+            });
+        }
+        function moveTile(idx) {
+            let curr = parseInt(tiles[idx].dataset.curr);
+            let empty = parseInt(tiles[8].dataset.curr);
+            let r1 = Math.floor(curr/3), c1 = curr%3; let r2 = Math.floor(empty/3), c2 = empty%3;
+            if (Math.abs(r1-r2) + Math.abs(c1-c2) === 1) {
+                tiles[idx].dataset.curr = empty; tiles[8].dataset.curr = curr;
+                renderTiles(); checkWinSlide();
+            }
+        }
+        function scramble(moves) {
+            let interval = setInterval(() => {
+                let empty = parseInt(tiles[8].dataset.curr);
+                let neighbors = []; let r = Math.floor(empty/3), c = empty%3;
+                tiles.forEach((t, i) => {
+                    if(i===8) return;
+                    let tc = parseInt(t.dataset.curr);
+                    let tr = Math.floor(tc/3), tc_ = tc%3;
+                    if(Math.abs(r-tr)+Math.abs(c-tc_)===1) neighbors.push(i);
+                });
+                let swapIdx = neighbors[Math.floor(Math.random()*neighbors.length)];
+                let tmp = tiles[swapIdx].dataset.curr; tiles[swapIdx].dataset.curr = empty; tiles[8].dataset.curr = tmp;
+                renderTiles(); moves--; if(moves<=0) clearInterval(interval);
+            }, 5);
+        }
+        function checkWinSlide() {
+            let win = true; tiles.forEach((t,i) => { if(parseInt(t.dataset.curr) !== i) win = false; });
+            if(win) { document.getElementById('error-2').innerText = "RESTORATION COMPLETE"; setTimeout(() => showStage('t2'), 1500); }
+        }
+
+        // --- MEMORY GAME ---
+        const memItems = ['🔎','🎩','🗝️','🕯️','🪙','📜'];
+        let missingItem = '';
+        function initMemoryGame() {
+            const grid = document.getElementById('memory-grid');
+            grid.innerHTML = '';
+            document.getElementById('mem-options').style.display = 'none';
+            document.getElementById('mem-instruction').innerText = "Memorize these items!";
+            
+            // ROSE misses 'Hat', SUNFLOWER misses 'Key'
+            missingItem = (currentTeam === 'rose') ? '🎩' : '🗝️';
+            
+            memItems.forEach(icon => {
+                let d = document.createElement('div'); d.className = 'memory-item'; d.innerText = icon; grid.appendChild(d);
+            });
+
+            setTimeout(() => {
+                grid.innerHTML = '';
+                document.getElementById('mem-instruction').innerText = "What is missing?";
+                memItems.forEach(icon => {
+                    if(icon !== missingItem) {
+                        let d = document.createElement('div'); d.className = 'memory-item'; d.innerText = icon; grid.appendChild(d);
+                    }
+                });
+                
+                const btnContainer = document.getElementById('mem-buttons');
+                btnContainer.innerHTML = '';
+                memItems.forEach(icon => {
+                    let btn = document.createElement('div'); btn.className = 'flower-btn';
+                    btn.innerHTML = `<span>${icon}</span>`;
+                    btn.onclick = () => {
+                        if(icon === missingItem) showStage('t3');
+                        else { 
+                            document.getElementById('error-mem').innerText = "Incorrect. Penalty -1 min.";
+                            timeRemaining -= 60; 
+                        }
+                    };
+                    btnContainer.appendChild(btn);
+                });
+                document.getElementById('mem-options').style.display = 'block';
+            }, 5000);
+        }
+
+        // --- FINAL FLOWER ---
+        function pickFlower(id, icon) {
+            if (bouquet.length >= 4) return;
+            bouquet.push(id);
+            document.getElementById('slot-' + (bouquet.length-1)).innerText = icon;
+            if (bouquet.length === 4) checkBouquet();
+        }
+        function resetBouquet() {
+            bouquet = [];
+            document.querySelectorAll('.slot').forEach((s, i) => s.innerText = i+1);
+            document.getElementById('error-flowers').innerText = "";
+        }
+        function checkBouquet() {
+            let correct = true;
+            for(let i=0; i<4; i++) { if(bouquet[i] !== finalSequence[i]) correct = false; }
+            if (correct) showStage('win');
+            else document.getElementById('error-flowers').innerText = "Incorrect Sequence. Consult the other team!";
+        }
+
+        // --- BACKDOOR ---
+        function triggerBackdoor() {
+            let p = prompt("Detective Override Code:");
+            if (p && p.toLowerCase() === 'party') {
+                if(currentStageId==='setup') return;
+                // Simple skip logic
+                let stages = ['intro', '1', 't1', '2', 't2', 'memory', 't3', 'flowers', 'win'];
+                let idx = stages.indexOf(currentStageId);
+                if(idx < stages.length-1) showStage(stages[idx+1]);
+            }
+        }
+
+    </script>
+</body>
+</html>
